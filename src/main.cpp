@@ -120,14 +120,17 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 int main() {
 	//srand(time(0));
 
-	int w = 32;// 1200;
-	int h = 32;// 800;
+	int w = 256;// 1200;
+	int h = 256;// 800;
 	int ns = 10;
 
 	int patch_x_size = w;
 	int patch_y_size = h;
 	int patch_x_idx = 1;
 	int patch_y_idx = 1;
+
+	clock_t t0, t1;
+	double elapsed;
 
 	int size = sizeof(unsigned char) * patch_x_size * patch_y_size * 3;
 	unsigned char* data = (unsigned char*)calloc(size, 1);
@@ -137,10 +140,14 @@ int main() {
 	int patch_y_start = (patch_y_idx - 1) * patch_y_size;
 	int patch_y_end = patch_y_idx * patch_y_size;
 
+	t0 = clock();
 	rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
+	t1 = clock();
+	elapsed = (t1 - t0) / (double)CLOCKS_PER_SEC;
 
 	writeBMP("itest1.bmp", data, patch_x_size, patch_y_size);
 	printf("Imagen creada.\n");
+	std::cout << "Tiempo transcurrido: " << elapsed << "s" << std::endl;
 
 	free(data);
 	getchar();
