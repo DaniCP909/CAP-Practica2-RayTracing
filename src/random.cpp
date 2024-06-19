@@ -2,9 +2,6 @@
 
 #include <cstdlib>
 
-inline float randomCap() {
-	return rand() / (RAND_MAX + 1.0f);
-}
 
 Vec3 randomNormalSphere() {
 	Vec3 p(2.0f * Vec3(randomCap(), randomCap(), randomCap()) - Vec3(1, 1, 1));

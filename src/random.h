@@ -2,6 +2,9 @@
 
 #include "Vec3.h"
 
-float randomCap();
+inline float randomCap() {
+	return rand() / (RAND_MAX + 1.0f);
+}
+
 Vec3 randomNormalSphere();
 Vec3 randomNormalDisk();
