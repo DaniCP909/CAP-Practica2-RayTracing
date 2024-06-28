@@ -23,6 +23,10 @@
 #include "Metallic.h"
 #include "Crystalline.h"
 
+#include <iomanip>
+
+#include "omp.h"
+
 #include "random.h"
 #include "utils.h"
 
@@ -97,8 +101,12 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 
 	Camera cam(lookfrom, lookat, Vec3(0, 1, 0), 20, float(w) / float(h), aperture, dist_to_focus);
 
+	#pragma omp parallel for collapse (2)
 	for (int j = 0; j < (ph - py); j++) {
 		for (int i = 0; i < (pw - px); i++) {
+			
+			if(j == 0) std::cout << "*[ENV]* threads: " << omp_get_num_threads() << " | max_threads: " << omp_get_max_threads() << std::endl;
+			if(i == 0) std::cout << "*[ENV]* THREAD id " << omp_get_thread_num() << std::endl;
 
 			Vec3 col(0, 0, 0);
 			for (int s = 0; s < ns; s++) {
@@ -115,6 +123,7 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 			img[(j * patch_w + i) * 3 + 0] = char(255.99 * col[2]);
 		}
 	}
+	
 }
 
 int main() {
@@ -129,7 +138,7 @@ int main() {
 	int patch_x_idx = 1;
 	int patch_y_idx = 1;
 
-	clock_t t0, t1;
+	double t0, t1;
 	double elapsed;
 
 	int size = sizeof(unsigned char) * patch_x_size * patch_y_size * 3;
@@ -139,15 +148,21 @@ int main() {
 	int patch_x_end = patch_x_idx * patch_x_size;
 	int patch_y_start = (patch_y_idx - 1) * patch_y_size;
 	int patch_y_end = patch_y_idx * patch_y_size;
+	
+	//	+OpenMP+	
+	int nThreads = 4;
+	omp_set_num_threads(nThreads);
 
-	t0 = clock();
+	t0 = omp_get_wtime();
 	rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
-	t1 = clock();
-	elapsed = (t1 - t0) / (double)CLOCKS_PER_SEC;
+	t1 = omp_get_wtime();
+	elapsed = (t1 - t0);
+	
+	std::string file_name = "../images/frame" + std::to_string(omp_get_thread_num()) +".bmp";
 
-	writeBMP("itest1.bmp", data, patch_x_size, patch_y_size);
+	writeBMP(file_name.c_str(), data, patch_x_size, patch_y_size);
 	printf("Imagen creada.\n");
-	std::cout << "Tiempo transcurrido: " << elapsed << "s" << std::endl;
+	std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
 
 	free(data);
 	getchar();
