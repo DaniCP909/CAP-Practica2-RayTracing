@@ -30,6 +30,10 @@
 #include "random.h"
 #include "utils.h"
 
+// -*- OpenMP -*-
+//mejor resultado: 4
+int nThreads = 4;
+
 Scene randomScene() {
 	int n = 500;
 	Scene list;
@@ -101,13 +105,11 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 
 	Camera cam(lookfrom, lookat, Vec3(0, 1, 0), 20, float(w) / float(h), aperture, dist_to_focus);
 
-	#pragma omp parallel for collapse (2)
+	omp_set_num_threads(nThreads);
+	#pragma omp parallel for
 	for (int j = 0; j < (ph - py); j++) {
 		for (int i = 0; i < (pw - px); i++) {
 			
-			if(j == 0) std::cout << "*[ENV]* threads: " << omp_get_num_threads() << " | max_threads: " << omp_get_max_threads() << std::endl;
-			if(i == 0) std::cout << "*[ENV]* THREAD id " << omp_get_thread_num() << std::endl;
-
 			Vec3 col(0, 0, 0);
 			for (int s = 0; s < ns; s++) {
 				float u = float(i + px + randomCap()) / float(w);
@@ -129,8 +131,8 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 int main() {
 	//srand(time(0));
 
-	int w = 256;// 1200;
-	int h = 256;// 800;
+	int w = 1200;// 1200;
+	int h = 800;// 800;
 	int ns = 10;
 
 	int patch_x_size = w;
@@ -149,16 +151,12 @@ int main() {
 	int patch_y_start = (patch_y_idx - 1) * patch_y_size;
 	int patch_y_end = patch_y_idx * patch_y_size;
 	
-	//	+OpenMP+	
-	int nThreads = 4;
-	omp_set_num_threads(nThreads);
-
 	t0 = omp_get_wtime();
 	rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
 	t1 = omp_get_wtime();
 	elapsed = (t1 - t0);
-	
-	std::string file_name = "../images/frame" + std::to_string(omp_get_thread_num()) +".bmp";
+
+	std::string file_name = "../images/frame" + std::to_string(1) +".bmp";
 
 	writeBMP(file_name.c_str(), data, patch_x_size, patch_y_size);
 	printf("Imagen creada.\n");
