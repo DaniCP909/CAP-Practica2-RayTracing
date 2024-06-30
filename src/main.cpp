@@ -26,9 +26,14 @@
 #include <iomanip>
 
 #include "omp.h"
+#include "mpi.h"
 
 #include "random.h"
 #include "utils.h"
+
+// ->- MPI ->-
+//
+#define NPROCS 4
 
 // -*- OpenMP -*-
 //mejor resultado: 4
@@ -106,7 +111,7 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 	Camera cam(lookfrom, lookat, Vec3(0, 1, 0), 20, float(w) / float(h), aperture, dist_to_focus);
 
 	omp_set_num_threads(nThreads);
-	#pragma omp parallel for
+	#pragma omp parallel for collapse(2)
 	for (int j = 0; j < (ph - py); j++) {
 		for (int i = 0; i < (pw - px); i++) {
 			
@@ -129,40 +134,49 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 }
 
 int main() {
-	//srand(time(0));
+	MPI_Init(NULL, NULL);
+	int rank, wrld_size;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &wrld_size);
 
-	int w = 1200;// 1200;
-	int h = 800;// 800;
+	int w = 256;// 1200;
+	int h = 256;// 800;
 	int ns = 10;
 
-	int patch_x_size = w;
-	int patch_y_size = h;
-	int patch_x_idx = 1;
-	int patch_y_idx = 1;
+	double id_offset = 1.0/ NPROCS;
+	int patch_x_size = w * id_offset;
+	int patch_y_size = h * id_offset;
+	double patch_x_idx = id_offset * rank;
+	double patch_y_idx = id_offset * rank;
+	std::cout << "[" << rank << "] patch_x_size " << patch_x_size << " , patch_y_size " << patch_y_size << ", patch_x_idx " << patch_x_idx << ", patch_y_idx " << patch_y_idx << std::endl;
 
 	double t0, t1;
 	double elapsed;
 
-	int size = sizeof(unsigned char) * patch_x_size * patch_y_size * 3;
+	int size = sizeof(unsigned char) * (patch_x_size) * (patch_y_size) * 3;
 	unsigned char* data = (unsigned char*)calloc(size, 1);
 
-	int patch_x_start = (patch_x_idx - 1) * patch_x_size;
-	int patch_x_end = patch_x_idx * patch_x_size;
-	int patch_y_start = (patch_y_idx - 1) * patch_y_size;
-	int patch_y_end = patch_y_idx * patch_y_size;
+	int patch_x_start = w * patch_x_idx;
+	int patch_x_end = (w * patch_x_idx) + patch_x_size;
+	int patch_y_start = h * patch_x_idx;
+	int patch_y_end = (h * patch_x_idx) + patch_y_size;
+	std::cout << "[" << rank << "] " << "id_offset: " << id_offset << " | "<< patch_x_start << ", " << patch_x_end << ", " << patch_y_start << ", " << patch_y_end << " ///" << std::endl; 
 	
-	t0 = omp_get_wtime();
-	rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
-	t1 = omp_get_wtime();
-	elapsed = (t1 - t0);
+	for(int i = 0; i < 2; i++){
+		srand(time(0));
+		t0 = omp_get_wtime();
+		rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
+		t1 = omp_get_wtime();
+		elapsed = (t1 - t0);
 
-	std::string file_name = "../images/frame" + std::to_string(1) +".bmp";
+		std::string file_name = "../images/frame" + std::to_string(i) + "_" + std::to_string(rank) +".bmp";
 
-	writeBMP(file_name.c_str(), data, patch_x_size, patch_y_size);
-	printf("Imagen creada.\n");
-	std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
-
+		writeBMP(file_name.c_str(), data, (patch_x_size), (patch_y_size));
+		printf("Imagen creada.\n");
+		std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
+	}
 	free(data);
 	getchar();
+	MPI_Finalize();
 	return (0);
 }
