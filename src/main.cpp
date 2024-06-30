@@ -139,15 +139,15 @@ int main() {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &wrld_size);
 
-	int w = 256;// 1200;
-	int h = 256;// 800;
+	int w = 1200;// 1200;
+	int h = 800;// 800;
 	int ns = 10;
 
-	double id_offset = 1.0/ NPROCS;
-	int patch_x_size = w * id_offset;
-	int patch_y_size = h * id_offset;
-	double patch_x_idx = id_offset * rank;
-	double patch_y_idx = id_offset * rank;
+	double patch_offset = 1.0/ (NPROCS / 2);
+	int patch_x_size = w * patch_offset;
+	int patch_y_size = h * patch_offset;
+	double patch_x_idx = patch_offset * (rank % (NPROCS / 2));
+	double patch_y_idx = patch_offset * (rank / (NPROCS / 2));
 	std::cout << "[" << rank << "] patch_x_size " << patch_x_size << " , patch_y_size " << patch_y_size << ", patch_x_idx " << patch_x_idx << ", patch_y_idx " << patch_y_idx << std::endl;
 
 	double t0, t1;
@@ -158,23 +158,23 @@ int main() {
 
 	int patch_x_start = w * patch_x_idx;
 	int patch_x_end = (w * patch_x_idx) + patch_x_size;
-	int patch_y_start = h * patch_x_idx;
-	int patch_y_end = (h * patch_x_idx) + patch_y_size;
-	std::cout << "[" << rank << "] " << "id_offset: " << id_offset << " | "<< patch_x_start << ", " << patch_x_end << ", " << patch_y_start << ", " << patch_y_end << " ///" << std::endl; 
+	int patch_y_start = h * patch_y_idx;
+	int patch_y_end = (h * patch_y_idx) + patch_y_size;
+	std::cout << "[" << rank << "] " << "patch_offset: " << patch_offset << " | "<< patch_x_start << ", " << patch_x_end << ", " << patch_y_start << ", " << patch_y_end << " ///" << std::endl; 
 	
-	for(int i = 0; i < 2; i++){
-		srand(time(0));
-		t0 = omp_get_wtime();
-		rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
-		t1 = omp_get_wtime();
-		elapsed = (t1 - t0);
+	
+	srand(time(0));
+	t0 = omp_get_wtime();
+	rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
+	t1 = omp_get_wtime();
+	elapsed = (t1 - t0);
 
-		std::string file_name = "../images/frame" + std::to_string(i) + "_" + std::to_string(rank) +".bmp";
+	std::string file_name = "../images/frame" + std::to_string(rank) +".bmp";
 
-		writeBMP(file_name.c_str(), data, (patch_x_size), (patch_y_size));
-		printf("Imagen creada.\n");
-		std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
-	}
+	writeBMP(file_name.c_str(), data, (patch_x_size), (patch_y_size));
+	printf("Imagen creada.\n");
+	std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
+	
 	free(data);
 	getchar();
 	MPI_Finalize();
