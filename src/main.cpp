@@ -33,7 +33,8 @@
 
 // ->- MPI ->-
 //
-#define NPROCS 4
+#define NPROCS 5
+#define NFRAMES 10
 
 // -*- OpenMP -*-
 //mejor resultado: 4
@@ -143,11 +144,11 @@ int main() {
 	int h = 800;// 800;
 	int ns = 10;
 
-	double patch_offset = 1.0/ (NPROCS / 2);
-	int patch_x_size = w * patch_offset;
+	double patch_offset = 1.0/ (NPROCS);
+	int patch_x_size = w;
 	int patch_y_size = h * patch_offset;
-	double patch_x_idx = patch_offset * (rank % (NPROCS / 2));
-	double patch_y_idx = patch_offset * (rank / (NPROCS / 2));
+	double patch_x_idx = 1;
+	double patch_y_idx = patch_offset * (rank % (NPROCS));
 	std::cout << "[" << rank << "] patch_x_size " << patch_x_size << " , patch_y_size " << patch_y_size << ", patch_x_idx " << patch_x_idx << ", patch_y_idx " << patch_y_idx << std::endl;
 
 	double t0, t1;
@@ -155,25 +156,34 @@ int main() {
 
 	int size = sizeof(unsigned char) * (patch_x_size) * (patch_y_size) * 3;
 	unsigned char* data = (unsigned char*)calloc(size, 1);
+	unsigned char* full_data;
+	int full_size = size * NPROCS;
 
-	int patch_x_start = w * patch_x_idx;
-	int patch_x_end = (w * patch_x_idx) + patch_x_size;
-	int patch_y_start = h * patch_y_idx;
+	std::cout << "MEDIDAS: " << size << " | " << full_size << std::endl;
+
+	if(rank == 0){
+		full_data = (unsigned char*)calloc(full_size, 1);
+	}
+
+	int patch_x_start = 0;
+	int patch_x_end = w;
+	int patch_y_start = (h * patch_y_idx);
 	int patch_y_end = (h * patch_y_idx) + patch_y_size;
 	std::cout << "[" << rank << "] " << "patch_offset: " << patch_offset << " | "<< patch_x_start << ", " << patch_x_end << ", " << patch_y_start << ", " << patch_y_end << " ///" << std::endl; 
 	
-	
+
 	srand(time(0));
 	t0 = omp_get_wtime();
 	rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
 	t1 = omp_get_wtime();
 	elapsed = (t1 - t0);
-
+	MPI_Gather(data, size, MPI_UNSIGNED_CHAR, full_data, size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+	if(rank == 0){
 	std::string file_name = "../images/frame" + std::to_string(rank) +".bmp";
-
-	writeBMP(file_name.c_str(), data, (patch_x_size), (patch_y_size));
+	writeBMP(file_name.c_str(), full_data, (w), (h));
 	printf("Imagen creada.\n");
 	std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
+	}
 	
 	free(data);
 	getchar();
