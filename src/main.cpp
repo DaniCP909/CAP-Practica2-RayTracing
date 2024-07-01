@@ -25,10 +25,16 @@
 
 #include <iomanip>
 
-#include "omp.h"
+#include <omp.h>
+#include <mpi.h>
 
 #include "random.h"
 #include "utils.h"
+
+// ->- MPI ->-
+//
+#define NPROCS 4
+#define NFRAMES 16
 
 // -*- OpenMP -*-
 //mejor resultado: 4
@@ -131,8 +137,17 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 int main() {
 	//srand(time(0));
 
-	int w = 1200;// 1200;
-	int h = 800;// 800;
+	MPI_Init(NULL, NULL);
+	int rank, wsize;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &wsize);
+
+	int seed = 0;
+
+	int procsFrames[NPROCS];
+
+	int w = 256;// 1200;
+	int h = 256;// 800;
 	int ns = 10;
 
 	int patch_x_size = w;
@@ -151,18 +166,24 @@ int main() {
 	int patch_y_start = (patch_y_idx - 1) * patch_y_size;
 	int patch_y_end = patch_y_idx * patch_y_size;
 	
-	t0 = omp_get_wtime();
-	rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
-	t1 = omp_get_wtime();
-	elapsed = (t1 - t0);
+	for(int iter = 0; iter < (NFRAMES / NPROCS); iter++){
+		if(rank == 0){
+			for(int i = 0; i < NPROCS; i++){
+				procsFrames[i] = (int)(randomCap() * 100);
+			}
+		}
+		MPI_Scatter(&procsFrames, 1, MPI_INT, &seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		srand(seed);
+		rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
 
-	std::string file_name = "../images/frame" + std::to_string(1) +".bmp";
+		std::string file_name = "../images/frame" + std::to_string(rank) + "_" + std::to_string(seed) +".bmp";
 
-	writeBMP(file_name.c_str(), data, patch_x_size, patch_y_size);
-	printf("Imagen creada.\n");
-	std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
-
+		writeBMP(file_name.c_str(), data, patch_x_size, patch_y_size);
+		printf("Imagen creada.\n");
+		std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
+	}
 	free(data);
 	getchar();
+	MPI_Finalize();
 	return (0);
 }
