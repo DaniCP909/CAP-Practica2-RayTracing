@@ -34,7 +34,7 @@
 // ->- MPI ->-
 //
 #define NPROCS 8
-#define NFRAMES 10
+#define NFRAMES 16
 
 // -*- OpenMP -*-
 //mejor resultado: 4
@@ -142,8 +142,8 @@ int main() {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &wrld_size);
 
-	int w = 1200;// 1200;
-	int h = 800;// 800;
+	int w = 256;// 1200;
+	int h = 256;// 800;
 	int ns = 10;
 
 	double patch_offset = 1.0/ (NPROCS);
@@ -151,8 +151,6 @@ int main() {
 	int patch_y_size = h * patch_offset;
 	double patch_x_idx = 1;
 	double patch_y_idx = patch_offset * (rank % (NPROCS));
-	std::cout << "[" << rank << "] patch_x_size " << patch_x_size << " , patch_y_size " << patch_y_size << ", patch_x_idx " << patch_x_idx << ", patch_y_idx " << patch_y_idx << std::endl;
-
 	double t0, t1;
 	double elapsed;
 	double t_film = 0.0;
@@ -165,6 +163,7 @@ int main() {
 	int full_size = size * NPROCS;
 
 	if(rank == 0){
+		t0 = MPI_Wtime();
 		full_data = (unsigned char*)calloc(full_size, 1);
 	}
 
@@ -172,37 +171,27 @@ int main() {
 	int patch_x_end = w;
 	int patch_y_start = (h * patch_y_idx);
 	int patch_y_end = (h * patch_y_idx) + patch_y_size;
-	std::cout << "[" << rank << "] " << "patch_offset: " << patch_offset << " | "<< patch_x_start << ", " << patch_x_end << ", " << patch_y_start << ", " << patch_y_end << " ///" << std::endl; 
-
 	for(int frame = 0; frame < NFRAMES; frame++){
 		if(rank == 0){
 			seed = (int)(randomCap() * 100);
 		}
 		MPI_Bcast(&seed, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
-		if(rank == 0) t0 = MPI_Wtime();
-		std::cout << "-------[" << rank << "]------SEED--->" << seed << std::endl;
 		srand(seed);
 
 		rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
 
 		MPI_Gather(data, size, MPI_UNSIGNED_CHAR, full_data, size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-
-		MPI_Barrier(MPI_COMM_WORLD); //only for measure time
-		if(rank == 0){
-			t1 = MPI_Wtime();
-			std::string file_name = "../images/frame" + std::to_string(frame) +".bmp";
-			writeBMP(file_name.c_str(), full_data, (w), (h));
-			printf("Imagen creada.\n");
-			elapsed = (t1 - t0);
-			std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
-			t_film += elapsed;
-			if(frame == (NFRAMES - 1)) {
-				std::cout << "[FINAL] Tiempo TOTAL pelicula: " << std::fixed << std::setprecision(9) << t_film << "s" << " NPROCS = " << NPROCS << " | nThreads = " << nThreads << std::endl;
-				free(full_data);
-				t_film = 0.0;
-			}
-		}
 	}
+
+	
+	MPI_Barrier(MPI_COMM_WORLD); //only for measure time
+	if(rank == 0){
+		t1 = MPI_Wtime();
+		elapsed += (t1 - t0);
+		std::cout << std::fixed << std::setprecision(4) << elapsed;
+		if ((NPROCS == 25) && (nThreads == 4)) std::cout << std::endl;
+	}
+
 	free(data);
 	MPI_Finalize();
 	return (0);

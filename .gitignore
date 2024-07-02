@@ -2,6 +2,7 @@
 .vscode
 images
 out.txt
+executables
 # Prerequisites
 *.d
 
