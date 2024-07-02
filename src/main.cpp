@@ -197,7 +197,7 @@ int main() {
 			std::cout << "Tiempo transcurrido: " << std::fixed << std::setprecision(9) << elapsed << "s" << std::endl;
 			t_film += elapsed;
 			if(frame == (NFRAMES - 1)) {
-				std::cout << "[FINAL] Tiempo TOTAL pelicula: " << std::fixed << std::setprecision(9) << t_film << "s" << std::endl;
+				std::cout << "[FINAL] Tiempo TOTAL pelicula: " << std::fixed << std::setprecision(9) << t_film << "s" << " NPROCS = " << NPROCS << " | nThreads = " << nThreads << std::endl;
 				free(full_data);
 				t_film = 0.0;
 			}
