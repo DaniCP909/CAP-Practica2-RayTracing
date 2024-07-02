@@ -204,7 +204,6 @@ int main() {
 		}
 	}
 	free(data);
-	getchar();
 	MPI_Finalize();
 	return (0);
 }

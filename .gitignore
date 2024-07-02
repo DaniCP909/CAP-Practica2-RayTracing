@@ -1,6 +1,7 @@
 *.bmp
 .vscode
 images
+out.txt
 # Prerequisites
 *.d
 
