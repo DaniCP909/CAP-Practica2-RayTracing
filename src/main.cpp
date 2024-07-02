@@ -112,9 +112,7 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 	Camera cam(lookfrom, lookat, Vec3(0, 1, 0), 20, float(w) / float(h), aperture, dist_to_focus);
 
 	omp_set_num_threads(nThreads);
-	#pragma omp parallel 
-	
-	#pragma omp for collapse(2)
+	#pragma omp parallel for
 	for (int j = 0; j < (ph - py); j++) {
 		for (int i = 0; i < (pw - px); i++) {
 			//if(i == 0 && j == 0) std::cout << "[OMP] num threads: " << omp_get_num_threads() << std::endl; 
