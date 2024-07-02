@@ -148,7 +148,7 @@ int main() {
 	int patch_x_size = w;
 	int patch_y_size = h * patch_offset;
 	double patch_x_idx = 1;
-	double patch_y_idx = patch_offset * (rank % (NPROCS));
+	double patch_y_idx = patch_offset * rank;
 	double t0, t1;
 	double elapsed;
 	double t_film = 0.0;
