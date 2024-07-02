@@ -192,6 +192,7 @@ int main() {
 		elapsed += (t1 - t0);
 		std::cout << std::fixed << std::setprecision(4) << elapsed;
 		if (nThreads != 4) std::cout << ";";
+		free(full_data);
 	}
 
 	free(data);
