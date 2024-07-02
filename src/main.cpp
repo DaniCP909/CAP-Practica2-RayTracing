@@ -33,12 +33,12 @@
 
 // ->- MPI ->-
 //1, 2, 4, 5, 8, 10, 16, 32
-#define NPROCS 8
-#define NFRAMES 16
+#define NPROCS 16
+#define NFRAMES 24
 
 // -*- OpenMP -*-
 //mejor resultado: 4
-int nThreads = 2;
+int nThreads = 4;
 
 Scene randomScene() {
 	int n = 500;
@@ -140,8 +140,8 @@ int main() {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &wrld_size);
 
-	int w = 256;// 1200;
-	int h = 256;// 800;
+	int w = 1200;// 1200;
+	int h = 800;// 800;
 	int ns = 10;
 
 	double patch_offset = 1.0/ (NPROCS);
@@ -179,6 +179,10 @@ int main() {
 		rayTracingCPU(data, w, h, ns, patch_x_start, patch_y_start, patch_x_end, patch_y_end);
 
 		MPI_Gather(data, size, MPI_UNSIGNED_CHAR, full_data, size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+		if(rank == 0){
+			std::string file_name = "../images/frame"  + std::to_string(NPROCS) + "_" + std::to_string(nThreads)+ "_" + std::to_string(frame) + ".bmp";
+			writeBMP(file_name.c_str(), full_data, (w), (h));
+		}
 	}
 
 	
