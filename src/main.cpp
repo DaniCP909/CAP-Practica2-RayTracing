@@ -32,9 +32,9 @@
 #include "utils.h"
 
 // ->- MPI ->-
-//
+//1, 2, 4, 8, 24
 #define NPROCS 4
-#define NFRAMES 4
+#define NFRAMES 24
 
 // -*- OpenMP -*-
 //mejor resultado: 4
@@ -112,7 +112,7 @@ void rayTracingCPU(unsigned char* img, int w, int h, int ns = 10, int px = 0, in
 	Camera cam(lookfrom, lookat, Vec3(0, 1, 0), 20, float(w) / float(h), aperture, dist_to_focus);
 
 	omp_set_num_threads(nThreads);
-	#pragma omp parallel for collapse(2)
+	#pragma omp parallel for
 	for (int j = 0; j < (ph - py); j++) {
 		for (int i = 0; i < (pw - px); i++) {
 			
@@ -187,7 +187,7 @@ int main() {
 		t1 = MPI_Wtime();
 		elapsed += (t1 - t0);
 		std::cout << std::fixed << std::setprecision(4) << elapsed;
-		if ((NPROCS == 25) && (nThreads == 4)) std::cout << std::endl;
+		if ((NPROCS != 25) && (nThreads == 4)) std::cout << ";";
 	}
 	free(data);
 	MPI_Finalize();
