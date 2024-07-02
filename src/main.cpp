@@ -187,7 +187,7 @@ int main() {
 		t1 = MPI_Wtime();
 		elapsed += (t1 - t0);
 		std::cout << std::fixed << std::setprecision(4) << elapsed;
-		if ((NPROCS != 25) && (nThreads == 4)) std::cout << ";";
+		if (nThreads == 4) std::cout << ";";
 	}
 	free(data);
 	MPI_Finalize();
