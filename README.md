@@ -1,6 +1,6 @@
 # RayTracing OpenMP + MPI
 
-Thi project was made to test both Shared Memory and Distributed Memory Models I a C++ Ray Tracing program.
+Thi project was made to test both Shared Memory and Distributed Memory Models in a C++ Ray Tracing program.
 In that program, a certain number of frames in a specified resolution, are rendered using Ray Tracing. 
 https://github.com/RayTracing
 
